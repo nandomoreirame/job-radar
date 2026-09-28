@@ -1,0 +1,537 @@
+{
+ "totalPages": 50,
+ "currentPage": 1,
+ "count": 696,
+ "data": [
+  {
+   "killerQuestions": [],
+   "id": 926052,
+   "title": "DESENVOLVEDOR DE HARDWARE SR",
+   "description": "$1e",
+   "currentState": "em_andamento",
+   "referenceId": 191448,
+   "companyName": "HIT TECNOLOGIA LTDA",
+   "companyLogo": "https://c5gwmsmjx1.execute-api.us-east-1.amazonaws.com/prod/empresa/logo/191448/Captura_de_tela_2025-10-07_165446.jpg",
+   "state": {
+    "id": 20,
+    "name": "São Paulo",
+    "code": "SP"
+   },
+   "city": {
+    "id": 3376,
+    "name": "Campinas",
+    "stateId": 20
+   },
+   "address": {
+    "id": 110177812,
+    "neighborhood": "Parque dos Resedás",
+    "number": "",
+    "latitude": null,
+    "longitude": null,
+    "city": {
+     "id": 3376,
+     "name": "Campinas",
+     "stateId": 20
+    },
+    "state": {
+     "id": 20,
+     "name": "São Paulo",
+     "code": "SP"
+    },
+    "country": {
+     "id": 30,
+     "name": "Brasil",
+     "code": "BR"
+    },
+    "zipCode": "13097-160",
+    "streetAddress": "Avenida Cambacica",
+    "foreignCity": null,
+    "foreignState": null,
+    "additionalInformation": ""
+   },
+   "slug": "hwit",
+   "redirectLink": "https://hwit./vacancies/926052?origem=portal",
+   "type": "externa",
+   "isHiddenJob": false,
+   "homeOffice": false,
+   "jobType": "hibrido",
+   "openPositions": 1,
+   "salary": {
+    "type": "simple",
+    "showRangeToApplicant": false,
+    "initialRange": null,
+    "finalRange": null,
+    "negotiable": false
+   },
+   "phases": [
+    {
+     "id": 4325054,
+     "name": "ANÁLISE DE CURRÍCULO",
+     "type": "fase_1",
+     "index": 0,
+     "show": true,
+     "description": null
+    },
+    {
+     "id": 4325055,
+     "name": "ANÁLISE COMPORTAMENTAL",
+     "type": "fase_2",
+     "index": 1,
+     "show": true,
+     "description": null
+    },
+    {
+     "id": 4325056,
+     "name": "PRÉ-ADMISSÃO",
+     "type": "pre_admissao",
+     "index": 2,
+     "show": true,
+     "description": null
+    }
+   ],
+   "hasSpecialNeeds": false,
+   "peopleWithDisabilities": false,
+   "disabilityType": null,
+   "pcdOnly": false,
+   "videoUrl": null,
+   "seniority": [
+    {
+     "id": 6,
+     "name": "Sênior",
+     "level": null
+    }
+   ],
+   "recruitmentContractType": [
+    {
+     "id": 10,
+     "name": "CLT",
+     "level": null
+    }
+   ],
+   "benefits": [
+    {
+     "id": 301308,
+     "name": "Assistência médica",
+     "level": null
+    },
+    {
+     "id": 301309,
+     "name": "Assistência odontológica",
+     "level": null
+    },
+    {
+     "id": 301335,
+     "name": "Vale combustível",
+     "level": null
+    },
+    {
+     "id": 301333,
+     "name": "Seguro de vida",
+     "level": null
+    },
+    {
+     "id": 301337,
+     "name": "Vale refeição",
+     "level": null
+    },
+    {
+     "id": 301338,
+     "name": "Vale transporte",
+     "level": null
+    },
+    {
+     "id": 301334,
+     "name": "Vale alimentação",
+     "level": null
+    }
+   ],
+   "language": [
+    {
+     "id": 1554,
+     "name": "Chinês simplificado",
+     "level": 3
+    },
+    {
+     "id": 1579,
+     "name": "Inglês",
+     "level": 4
+    }
+   ],
+   "hardSkills": [],
+   "education": [
+    {
+     "id": 45,
+     "name": "Graduação",
+     "level": null
+    },
+    {
+     "id": 429250,
+     "name": "MBA",
+     "level": null
+    }
+   ],
+   "createdAt": "2026-09-23",
+   "availablePositions": 1,
+   "affirmative": [],
+   "occupationAreas": [
+    {
+     "id": 349584,
+     "name": "Tecnologia",
+     "level": null
+    },
+    {
+     "id": 349589,
+     "name": "Engenharia",
+     "level": null
+    }
+   ],
+   "isGoogleForJobsEnabled": true,
+   "requiredFields": [
+    "professionalExperiences",
+    "salary",
+    "linkedin",
+    "address",
+    "street",
+    "district",
+    "city",
+    "academicEducations"
+   ],
+   "receivingResume": true,
+   "showSkillsLevel": true,
+   "showModality": true,
+   "shift": [
+    {
+     "id": 42,
+     "name": "Integral",
+     "level": null
+    }
+   ],
+   "date": {
+    "due": "2026-10-31",
+    "show": false
+   },
+   "preApplyEnabled": false,
+   "startSolidesEnabled": false,
+   "publishers": null,
+   "isDisabled": false
+  },
+  {
+   "killerQuestions": [],
+   "id": 926088,
+   "title": "Analista de B.I sênior",
+   "description": "$1f",
+   "currentState": "em_andamento",
+   "referenceId": 120205,
+   "companyName": "ALCANS TELECOM LTDA",
+   "companyLogo": "https://c5gwmsmjx1.execute-api.us-east-1.amazonaws.com/prod/empresa/logo/120205/alcans__2_.png",
+   "state": {
+    "id": 20,
+    "name": "São Paulo",
+    "code": "SP"
+   },
+   "city": {
+    "id": 3374,
+    "name": "Cajuru",
+    "stateId": 20
+   },
+   "address": {
+    "id": 110178911,
+    "neighborhood": "Centro",
+    "number": "476",
+    "latitude": null,
+    "longitude": null,
+    "city": {
+     "id": 3374,
+     "name": "Cajuru",
+     "stateId": 20
+    },
+    "state": {
+     "id": 20,
+     "name": "São Paulo",
+     "code": "SP"
+    },
+    "country": {
+     "id": 30,
+     "name": "Brasil",
+     "code": "BR"
+    },
+    "zipCode": "14240-051",
+    "streetAddress": "Rua Tristão José de Carvalho",
+    "foreignCity": null,
+    "foreignState": null,
+    "additionalInformation": ""
+   },
+   "slug": "alcans",
+   "redirectLink": "https://alcans./vacancies/926088?origem=portal",
+   "type": "externa",
+   "isHiddenJob": false,
+   "homeOffice": false,
+   "jobType": "presencial",
+   "openPositions": 1,
+   "salary": {
+    "type": "simple",
+    "showRangeToApplicant": false,
+    "initialRange": null,
+    "finalRange": null,
+    "negotiable": false
+   },
+   "phases": [
+    {
+     "id": 4325193,
+     "name": "ANÁLISE DE CURRÍCULO",
+     "type": "fase_1",
+     "index": 0,
+     "show": true,
+     "description": null
+    },
+    {
+     "id": 4325194,
+     "name": "ANÁLISE COMPORTAMENTAL",
+     "type": "fase_2",
+     "index": 1,
+     "show": true,
+     "description": null
+    },
+    {
+     "id": 4325195,
+     "name": "PRÉ-ADMISSÃO",
+     "type": "pre_admissao",
+     "index": 2,
+     "show": true,
+     "description": null
+    }
+   ],
+   "hasSpecialNeeds": false,
+   "peopleWithDisabilities": false,
+   "disabilityType": null,
+   "pcdOnly": false,
+   "videoUrl": null,
+   "seniority": [
+    {
+     "id": 6,
+     "name": "Sênior",
+     "level": null
+    }
+   ],
+   "recruitmentContractType": [
+    {
+     "id": 10,
+     "name": "CLT",
+     "level": null
+    }
+   ],
+   "benefits": [],
+   "language": [],
+   "hardSkills": [
+    {
+     "id": 1057634,
+     "name": "Proatividade",
+     "level": 3
+    },
+    {
+     "id": 1190917,
+     "name": "Habilidade em desenvolver relacionamentos",
+     "level": 3
+    },
+    {
+     "id": 1190977,
+     "name": "Analise de processos",
+     "level": 3
+    }
+   ],
+   "education": [
+    {
+     "id": 45,
+     "name": "Graduação",
+     "level": null
+    }
+   ],
+   "createdAt": "2026-09-23",
+   "availablePositions": 1,
+   "affirmative": [],
+   "occupationAreas": [
+    {
+     "id": 349584,
+     "name": "Tecnologia",
+     "level": null
+    }
+   ],
+   "isGoogleForJobsEnabled": true,
+   "requiredFields": [
+    "drivers_license_category",
+    "professionalExperiences",
+    "linkedin",
+    "indentify"
+   ],
+   "receivingResume": true,
+   "showSkillsLevel": true,
+   "showModality": true,
+   "shift": [
+    {
+     "id": 42,
+     "name": "Integral",
+     "level": null
+    }
+   ],
+   "date": {
+    "due": "2026-10-20",
+    "show": false
+   },
+   "preApplyEnabled": false,
+   "startSolidesEnabled": false,
+   "publishers": null,
+   "isDisabled": false
+  },
+  {
+   "killerQuestions": [],
+   "id": 926340,
+   "title": "CONSULTOR DE VENDAS (PJ) – SETOR PÚBLICO",
+   "description": "$20",
+   "currentState": "em_andamento",
+   "referenceId": 183719,
+   "companyName": "Empresa confidencial",
+   "companyLogo": null,
+   "state": {
+    "id": 19,
+    "name": "Rio de Janeiro",
+    "code": "RJ"
+   },
+   "city": {
+    "id": 3243,
+    "name": "Rio de Janeiro",
+    "stateId": 19
+   },
+   "address": {
+    "id": 110190317,
+    "neighborhood": "",
+    "number": "",
+    "latitude": null,
+    "longitude": null,
+    "city": {
+     "id": 3243,
+     "name": "Rio de Janeiro",
+     "stateId": 19
+    },
+    "state": {
+     "id": 19,
+     "name": "Rio de Janeiro",
+     "code": "RJ"
+    },
+    "country": {
+     "id": 30,
+     "name": "Brasil",
+     "code": "BR"
+    },
+    "zipCode": "20010-000",
+    "streetAddress": "",
+    "foreignCity": null,
+    "foreignState": null,
+    "additionalInformation": ""
+   },
+   "slug": null,
+   "redirectLink": "https:///vacancies/926340?origem=portal",
+   "type": "externa",
+   "isHiddenJob": true,
+   "homeOffice": false,
+   "jobType": "hibrido",
+   "openPositions": 1,
+   "salary": {
+    "type": "simple",
+    "showRangeToApplicant": false,
+    "initialRange": null,
+    "finalRange": null,
+    "negotiable": false
+   },
+   "phases": [
+    {
+     "id": 4326361,
+     "name": "ANÁLISE DE CURRÍCULO",
+     "type": "fase_1",
+     "index": 0,
+     "show": true,
+     "description": null
+    },
+    {
+     "id": 4326362,
+     "name": "ANÁLISE COMPORTAMENTAL",
+     "type": "fase_2",
+     "index": 1,
+     "show": true,
+     "description": null
+    },
+    {
+     "id": 4326363,
+     "name": "PRÉ-ADMISSÃO",
+     "type": "pre_admissao",
+     "index": 2,
+     "show": true,
+     "description": null
+    }
+   ],
+   "hasSpecialNeeds": false,
+   "peopleWithDisabilities": false,
+   "disabilityType": null,
+   "pcdOnly": false,
+   "videoUrl": null,
+   "seniority": [
+    {
+     "id": 6,
+     "name": "Sênior",
+     "level": null
+    }
+   ],
+   "recruitmentContractType": [
+    {
+     "id": 9,
+     "name": "PJ",
+     "level": null
+    }
+   ],
+   "benefits": [],
+   "language": [],
+   "hardSkills": [],
+   "education": [
+    {
+     "id": 45,
+     "name": "Graduação",
+     "level": null
+    }
+   ],
+   "createdAt": "2026-09-23",
+   "availablePositions": 1,
+   "affirmative": [],
+   "occupationAreas": [
+    {
+     "id": 349584,
+     "name": "Tecnologia",
+     "level": null
+    }
+   ],
+   "isGoogleForJobsEnabled": false,
+   "requiredFields": [
+    "salary",
+    "about_me",
+    "academicEducations",
+    "professionalExperiences"
+   ],
+   "receivingResume": true,
+   "showSkillsLevel": true,
+   "showModality": true,
+   "shift": [
+    {
+     "id": 42,
+     "name": "Integral",
+     "level": null
+    }
+   ],
+   "date": {
+    "due": "2026-10-30",
+    "show": false
+   },
+   "preApplyEnabled": false,
+   "startSolidesEnabled": false,
+   "publishers": null,
+   "isDisabled": false
+  }
+ ]
+}
