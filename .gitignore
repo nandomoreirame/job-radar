@@ -1,0 +1,17 @@
+# Segredos e dados de quem usa o radar. Nada disso pertence ao repositório.
+.env
+data/
+profile/
+*.db
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Processo interno
+docs/specs/
