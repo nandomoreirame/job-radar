@@ -11,7 +11,7 @@ echo "=== $(date -Is) ==="
 # de 50 páginas é só uma trava; na prática ela encerra por volta da 16a.
 python3 scripts/collect.py \
   --profile profile/perfil.md \
-  --sources gupy,github,programathor,solides \
+  --sources gupy,github,programathor,solides,greenhouse,lever,ashby \
   --solides-pages 50 \
   --out data/candidates.json \
   --db data/seen.db
