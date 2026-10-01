@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import html
 import re
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -13,12 +14,16 @@ _PUNCT_RE = re.compile(r"[^\w\s]+")
 
 
 def clean_html(raw: str | None) -> str:
-    """Descrições vêm em HTML em quase toda fonte; o filtro precisa de texto puro."""
+    """Descrições vêm em HTML em quase toda fonte; o filtro precisa de texto puro.
+
+    `html.unescape` cobre o catálogo de entidades; a lista manual anterior
+    perdia casos (&quot;, &apos;, numéricos). Quem recebe HTML escapado duas
+    vezes (Greenhouse) deve unescape antes de passar pelo Job.
+    """
     if not raw:
         return ""
     text = _TAG_RE.sub(" ", raw)
-    for entity, char in (("&nbsp;", " "), ("&amp;", "&"), ("&lt;", "<"), ("&gt;", ">"), ("&#39;", "'")):
-        text = text.replace(entity, char)
+    text = html.unescape(text)
     return _WS_RE.sub(" ", text).strip()
 
 
