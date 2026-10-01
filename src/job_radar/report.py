@@ -31,7 +31,18 @@ def job_to_embed(job: Job, score: int, reason: str, summary_chars: int = 320) ->
 
     fields = [{"name": "Modalidade", "value": MODE_LABEL[mode], "inline": True}]
     if job.location:
-        fields.append({"name": "Local", "value": job.location, "inline": True})
+        local = job.location
+        if job.other_locations:
+            local = f"{local} (+{len(job.other_locations)} cidades)"
+        fields.append({"name": "Local", "value": local, "inline": True})
+    elif job.other_locations:
+        fields.append(
+            {
+                "name": "Local",
+                "value": f"+{len(job.other_locations)} cidades",
+                "inline": True,
+            }
+        )
     if contract:
         fields.append({"name": "Contrato", "value": contract, "inline": True})
     if salary:

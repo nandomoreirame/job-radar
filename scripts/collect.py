@@ -12,18 +12,27 @@ import argparse
 import json
 import os
 import sys
+from collections import defaultdict
 from dataclasses import asdict
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 from job_radar.boards import resolve_boards  # noqa: E402
+from job_radar.dedup import (  # noqa: E402
+    drop_near_duplicates,
+    matches_history_simhash,
+    select_variant,
+)
+from job_radar.discards import format_row, write_discards  # noqa: E402
 from job_radar.filters import passes_hard_filters  # noqa: E402
+from job_radar.fsutil import atomic_write_text  # noqa: E402
 from job_radar.health import (  # noqa: E402
     SourceHealth,
     format_health_warnings,
     update_failure_streaks,
 )
+from job_radar.identity import url_key  # noqa: E402
 from job_radar.models import Job  # noqa: E402
 from job_radar.profile import load_profile  # noqa: E402
 from job_radar.runstats import write_stats  # noqa: E402
@@ -36,7 +45,7 @@ from job_radar.sources import (  # noqa: E402
     fetch_programathor,
     fetch_solides,
 )
-from job_radar.store import Store  # noqa: E402
+from job_radar.store import SEEN_WINDOW_DAYS, Store  # noqa: E402
 from job_radar.targets import TARGETS  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -74,7 +83,11 @@ def _read_streaks(path: Path) -> dict[str, int]:
 
 def _write_streaks(path: Path, streaks: dict[str, int]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(streaks, ensure_ascii=False, indent=2), encoding="utf-8")
+    atomic_write_text(path, json.dumps(streaks, ensure_ascii=False, indent=2))
+
+
+def _add(variants: dict[str, list[Job]], job: Job) -> None:
+    variants[job.fingerprint].append(job)
 
 
 def main() -> int:
@@ -90,6 +103,11 @@ def main() -> int:
     ap.add_argument("--sources", default="gupy,github,programathor", help=_SOURCE_HELP)
     ap.add_argument("--solides-pages", type=int, default=50,
                     help="páginas da Sólides a varrer (14 vagas por página)")
+    ap.add_argument(
+        "--discards",
+        default=str(ROOT / "data" / "discarded.tsv"),
+        help="TSV das vagas descartadas nesta rodada (sobrescreve)",
+    )
     args = ap.parse_args()
 
     _, skills = load_profile(Path(args.profile))
@@ -102,7 +120,7 @@ def main() -> int:
 
     sources = _expand_sources(args.sources)
     boards = resolve_boards()
-    raw: dict[str, object] = {}
+    variants: dict[str, list[Job]] = defaultdict(list)
     health_by_source: dict[str, SourceHealth] = {}
 
     def health_for(name: str) -> SourceHealth:
@@ -113,23 +131,19 @@ def main() -> int:
         for target in wanted:
             for term in TARGETS.get(target, []):
                 for job in fetch_gupy(term, health=h):
-                    raw.setdefault(job.fingerprint, job)  # dedup dentro da própria rodada
+                    _add(variants, job)
 
     if "github" in sources:
-        # os repos não têm busca por termo: trazem tudo e os filtros decidem
         h = health_for("github")
         for job in fetch_github_repos(health=h):
-            raw.setdefault(job.fingerprint, job)
+            _add(variants, job)
 
     if "programathor" in sources:
         h = health_for("programathor")
         for job in fetch_programathor(health=h):
-            raw.setdefault(job.fingerprint, job)
+            _add(variants, job)
 
     if "solides" in sources:
-        # A listagem da Sólides não traz descrição, e buscá-la custa uma requisição
-        # por anúncio. `keep` roda os cortes que não dependem de descrição
-        # (senioridade, modalidade, praça, função, stack) e só então vale detalhar.
         h = health_for("solides")
 
         def vale_detalhar(job: Job) -> bool:
@@ -137,22 +151,29 @@ def main() -> int:
             return aprovado
 
         for job in fetch_solides(max_pages=args.solides_pages, keep=vale_detalhar, health=h):
-            raw.setdefault(job.fingerprint, job)
+            _add(variants, job)
 
     if "greenhouse" in sources:
         h = health_for("greenhouse")
         for job in fetch_greenhouse(boards.get("greenhouse"), health=h):
-            raw.setdefault(job.fingerprint, job)
+            _add(variants, job)
 
     if "lever" in sources:
         h = health_for("lever")
         for job in fetch_lever(boards.get("lever"), health=h):
-            raw.setdefault(job.fingerprint, job)
+            _add(variants, job)
 
     if "ashby" in sources:
         h = health_for("ashby")
         for job in fetch_ashby(boards.get("ashby"), health=h):
-            raw.setdefault(job.fingerprint, job)
+            _add(variants, job)
+
+    # uma variante por fingerprint (a que passa no filtro, se houver);
+    # ok/reason vêm do select para não recontar o hard filter na escolhida
+    raw = [
+        select_variant(group, skills, args.min_skills)
+        for group in variants.values()
+    ]
 
     fontes = {name: h.to_dict() for name, h in health_by_source.items()}
     prev_streaks = _read_streaks(Path(args.health))
@@ -163,30 +184,52 @@ def main() -> int:
         "coletadas": len(raw),
         "reprovadas": 0,
         "ja_enviadas": 0,
+        "quase_duplicadas": 0,
         "candidatas": 0,
         "fontes": fontes,
         "streaks": streaks,
     }
     motivos: dict[str, int] = {}
-    candidates = []
+    discard_rows: list[str] = []
+    passed: list[Job] = []
+    seen_fps, seen_urls = store.seen_keys(window_days=SEEN_WINDOW_DAYS)
+    history_simhashes = store.recent_simhashes(window_days=SEEN_WINDOW_DAYS)
 
-    for job in raw.values():
-        ok, reason = passes_hard_filters(job, skills, args.min_skills)
+    for job, ok, reason in raw:
         if not ok:
             stats["reprovadas"] += 1
-            motivos[reason.split("(")[0].strip()] = motivos.get(reason.split("(")[0].strip(), 0) + 1
+            chave = reason.split("(")[0].strip()
+            motivos[chave] = motivos.get(chave, 0) + 1
+            discard_rows.append(format_row(job, reason))
             continue
-        if not store.is_new(job.fingerprint):
+        key = url_key(job.url)
+        already = job.fingerprint in seen_fps or (key in seen_urls if key else False)
+        if already or matches_history_simhash(job, history_simhashes):
             stats["ja_enviadas"] += 1
+            discard_rows.append(format_row(job, "já enviada"))
             continue
+        passed.append(job)
+
+    candidates_jobs, near_dropped = drop_near_duplicates(passed)
+    stats["quase_duplicadas"] = near_dropped
+    # as quase-duplicatas caíram depois do filtro: registram no TSV
+    kept_ids = {id(j) for j in candidates_jobs}
+    for job in passed:
+        if id(job) not in kept_ids:
+            discard_rows.append(format_row(job, "quase duplicada"))
+
+    candidates = []
+    for job in candidates_jobs:
         stats["candidatas"] += 1
         candidates.append(asdict(job) | {"fingerprint": job.fingerprint})
 
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps(candidates, ensure_ascii=False, indent=2, default=str), encoding="utf-8")
+    atomic_write_text(
+        out, json.dumps(candidates, ensure_ascii=False, indent=2, default=str)
+    )
+    write_discards(Path(args.discards), discard_rows, append=False)
 
-    # o collect abre a rodada, então zera o que sobrou da varredura anterior
     write_stats(Path(args.stats), reset=True, motivos=motivos, **stats)
 
     print(f"Qualificações do perfil: {len(skills)}")
@@ -195,6 +238,7 @@ def main() -> int:
     for motivo, n in sorted(motivos.items(), key=lambda kv: -kv[1]):
         print(f"   - {motivo}: {n}")
     print(f"Já enviadas antes:    {stats['ja_enviadas']}")
+    print(f"Quase duplicadas:     {stats['quase_duplicadas']}")
     print(f"CANDIDATAS:           {stats['candidatas']}  -> {out}")
 
     for line in format_health_warnings(fontes, streaks):

@@ -12,6 +12,8 @@ import json
 from datetime import datetime
 from pathlib import Path
 
+from job_radar.fsutil import atomic_write_text
+
 
 def merge_stats(current: dict, new: dict) -> dict:
     """Combina os números das etapas: a etapa seguinte acrescenta, não substitui."""
@@ -41,6 +43,5 @@ def write_stats(path: Path, reset: bool = False, **values: object) -> dict:
     path = Path(path)
     merged = merge_stats({} if reset else read_stats(path), dict(values))
     merged["at"] = datetime.now().isoformat(timespec="seconds")
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(merged, ensure_ascii=False, indent=2), encoding="utf-8")
+    atomic_write_text(path, json.dumps(merged, ensure_ascii=False, indent=2))
     return merged

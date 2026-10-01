@@ -18,7 +18,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 from job_radar.contact import extract_email, extract_phone  # noqa: E402
 from job_radar.filters import count_skill_hits  # noqa: E402
-from job_radar.models import Job  # noqa: E402
+from job_radar.fsutil import atomic_write_text  # noqa: E402
+from job_radar.models import Job, parse_published_at  # noqa: E402
 from job_radar.profile import load_profile  # noqa: E402
 from job_radar.runstats import write_stats  # noqa: E402
 from job_radar.scoring import score_job  # noqa: E402
@@ -43,7 +44,8 @@ def main() -> int:
 
     scored = []
     for item in items:
-        data = {k: v for k, v in item.items() if k not in {"fingerprint", "published_at"}}
+        data = {k: v for k, v in item.items() if k != "fingerprint"}
+        data["published_at"] = parse_published_at(data.get("published_at"))
         job = Job(**data)
         hits = count_skill_hits(job, skills)
         score = score_job(job, skills, hits)
@@ -62,11 +64,20 @@ def main() -> int:
     by_email = [j for j in approved if j["contact_email"]]
     manual = [j for j in approved if not j["contact_email"]]
 
-    Path(args.out_email).write_text(json.dumps(by_email, ensure_ascii=False, indent=2, default=str), encoding="utf-8")
-    Path(args.out_manual).write_text(json.dumps(manual, ensure_ascii=False, indent=2, default=str), encoding="utf-8")
+    atomic_write_text(
+        Path(args.out_email),
+        json.dumps(by_email, ensure_ascii=False, indent=2, default=str),
+    )
+    atomic_write_text(
+        Path(args.out_manual),
+        json.dumps(manual, ensure_ascii=False, indent=2, default=str),
+    )
 
     if args.out_all:
-        Path(args.out_all).write_text(json.dumps(approved, ensure_ascii=False, indent=2, default=str), encoding="utf-8")
+        atomic_write_text(
+            Path(args.out_all),
+            json.dumps(approved, ensure_ascii=False, indent=2, default=str),
+        )
 
     # a melhor nota é o que distingue "não apareceu vaga" de "o corte está alto"
     melhor = max((j["score"] for j in scored), default=None)

@@ -20,8 +20,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
+from job_radar.fsutil import atomic_write_text  # noqa: E402
 from job_radar.health import format_health_warnings  # noqa: E402
-from job_radar.models import Job  # noqa: E402
+from job_radar.models import Job, parse_published_at  # noqa: E402
 from job_radar.report import chunk_embeds, job_to_embed  # noqa: E402
 from job_radar.report import build_empty_embed  # noqa: E402
 from job_radar.runstats import read_stats  # noqa: E402
@@ -74,7 +75,7 @@ def record_message_id(path: Path, message_id: str, title: str) -> None:
         return
     log = json.loads(path.read_text(encoding="utf-8")) if path.exists() else []
     log.append({"id": message_id, "title": title, "at": __import__("datetime").datetime.now().isoformat()})
-    path.write_text(json.dumps(log, ensure_ascii=False, indent=2), encoding="utf-8")
+    atomic_write_text(path, json.dumps(log, ensure_ascii=False, indent=2))
 
 
 def should_notify_empty(items: list, notify_empty: bool) -> bool:
@@ -144,7 +145,7 @@ def main() -> int:
         data = dict(item)
         score, reason = data.pop("score", 0), data.pop("reason", "")
         data.pop("fingerprint", None)
-        data.pop("published_at", None)
+        data["published_at"] = parse_published_at(data.get("published_at"))
         job = Job(**data)
         pairs.append((job, job_to_embed(job, score, reason, 320 if args.batch else 700)))
 

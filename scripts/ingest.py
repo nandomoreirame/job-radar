@@ -8,7 +8,7 @@ tempo.
 
 Entrada: JSON (arquivo ou stdin) com uma lista de objetos contendo ao menos
 title, company e url. Campos aceitos: description, location, work_mode_hint,
-contact_email, contact_phone, source, published_at.
+contact_email, contact_phone, source, published_at, other_locations.
 """
 
 from __future__ import annotations
@@ -18,30 +18,31 @@ import json
 import os
 import sys
 from dataclasses import asdict
-from datetime import datetime
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
+from job_radar.discards import format_row, write_discards  # noqa: E402
 from job_radar.filters import passes_hard_filters  # noqa: E402
-from job_radar.models import Job  # noqa: E402
+from job_radar.fsutil import atomic_write_text  # noqa: E402
+from job_radar.identity import url_key  # noqa: E402
+from job_radar.models import Job, parse_published_at  # noqa: E402
 from job_radar.profile import load_profile  # noqa: E402
-from job_radar.store import Store  # noqa: E402
+from job_radar.store import SEEN_WINDOW_DAYS, Store  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
-CAMPOS = {"title", "company", "url", "description", "location", "work_mode_hint",
-          "contact_email", "contact_phone", "source", "external_id", "published_at"}
+CAMPOS = {
+    "title", "company", "url", "description", "location", "work_mode_hint",
+    "contact_email", "contact_phone", "source", "external_id", "published_at",
+    "other_locations",
+}
 
 
 def to_job(raw: dict, default_source: str) -> Job:
     data = {k: v for k, v in raw.items() if k in CAMPOS}
     data.setdefault("source", default_source)
     data.setdefault("external_id", "")
-    if isinstance(data.get("published_at"), str):
-        try:
-            data["published_at"] = datetime.fromisoformat(data["published_at"].replace("Z", "+00:00"))
-        except ValueError:
-            data["published_at"] = None
+    data["published_at"] = parse_published_at(data.get("published_at"))
     return Job(**data)
 
 
@@ -54,6 +55,11 @@ def main() -> int:
     ap.add_argument("--out", default=str(ROOT / "data" / "candidates.json"))
     ap.add_argument("--db", default=str(ROOT / "data" / "seen.db"))
     ap.add_argument("--merge", action="store_true", help="soma ao arquivo de saída em vez de substituir")
+    ap.add_argument(
+        "--discards",
+        default=str(ROOT / "data" / "discarded.tsv"),
+        help="TSV de descartes (sempre anexa; header só se o arquivo for novo)",
+    )
     args = ap.parse_args()
 
     payload = sys.stdin.read() if args.input == "-" else Path(args.input).read_text(encoding="utf-8")
@@ -63,6 +69,7 @@ def main() -> int:
 
     _, skills = load_profile(Path(args.profile))
     store = Store(Path(args.db))
+    seen_fps, seen_urls = store.seen_keys(window_days=SEEN_WINDOW_DAYS)
 
     existentes: list[dict] = []
     out = Path(args.out)
@@ -72,6 +79,7 @@ def main() -> int:
 
     aceitas, reprovadas, repetidas = [], 0, 0
     motivos: dict[str, int] = {}
+    discard_rows: list[str] = []
     for raw in entradas:
         job = to_job(raw, args.source)
         ok, motivo = passes_hard_filters(job, skills, args.min_skills)
@@ -79,15 +87,28 @@ def main() -> int:
             reprovadas += 1
             chave = motivo.split("(")[0].strip()
             motivos[chave] = motivos.get(chave, 0) + 1
+            discard_rows.append(format_row(job, motivo))
             continue
-        if not store.is_new(job.fingerprint) or job.fingerprint in vistos:
+        key = url_key(job.url)
+        already = (
+            job.fingerprint in seen_fps
+            or job.fingerprint in vistos
+            or (key in seen_urls if key else False)
+        )
+        if already:
             repetidas += 1
+            discard_rows.append(format_row(job, "já enviada"))
             continue
-        vistos.add(job.fingerprint)  # o mesmo lote pode trazer a vaga repetida
+        vistos.add(job.fingerprint)
         aceitas.append(asdict(job) | {"fingerprint": job.fingerprint})
 
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps(existentes + aceitas, ensure_ascii=False, indent=2, default=str), encoding="utf-8")
+    atomic_write_text(
+        out,
+        json.dumps(existentes + aceitas, ensure_ascii=False, indent=2, default=str),
+    )
+    # Sempre anexa: sobrescrever apagaria o TSV que o collect gravou na mesma rodada.
+    write_discards(Path(args.discards), discard_rows, append=True)
 
     print(f"Recebidas:   {len(entradas)}")
     print(f"Reprovadas:  {reprovadas}")
