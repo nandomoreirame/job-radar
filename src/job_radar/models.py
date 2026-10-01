@@ -2,15 +2,33 @@
 
 from __future__ import annotations
 
-import hashlib
 import html
 import re
 from dataclasses import dataclass, field
 from datetime import datetime
 
+from job_radar.identity import job_fingerprint
+
 _TAG_RE = re.compile(r"<[^>]+>")
 _WS_RE = re.compile(r"\s+")
-_PUNCT_RE = re.compile(r"[^\w\s]+")
+
+
+def parse_published_at(value: object) -> datetime | None:
+    """ISO string -> datetime; inválido/ausente -> None.
+
+    JSON das etapas intermediárias serializa a data como string. Sem o parse,
+    o Job fica com str e a penalidade de idade no score nunca aplica.
+    """
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        return value
+    if isinstance(value, str):
+        try:
+            return datetime.fromisoformat(value.replace("Z", "+00:00"))
+        except ValueError:
+            return None
+    return None
 
 
 def clean_html(raw: str | None) -> str:
@@ -43,12 +61,16 @@ class Job:
     contact_email: str = ""
     contact_phone: str = ""
     published_at: datetime | None = None
+    # Outras cidades da mesma vaga na rodada (Gupy publica uma variante por praça).
+    other_locations: list[str] = field(default_factory=list)
 
     def __post_init__(self) -> None:
         self.title = (self.title or "").strip()
         self.company = (self.company or "").strip()
         self.location = (self.location or "").strip()
         self.description = clean_html(self.description)
+        if self.other_locations is None:
+            self.other_locations = []
 
     @property
     def fingerprint(self) -> str:
@@ -57,12 +79,11 @@ class Job:
         Quando a empresa não foi extraída com confiança, o título sozinho decide:
         a mesma vaga publicada em dois repositórios traz empresas diferentes
         (o nome do repo), e incluí-la geraria duas entradas para um anúncio só.
+
+        Prefere under-merging a over-merging: fundir demais esconde uma vaga em
+        silêncio; fundir de menos deixa duplicata visível no canal.
         """
-        title = _PUNCT_RE.sub(" ", self.title.casefold())
-        parts = [_WS_RE.sub(" ", title).strip()]
-        if self.company:
-            parts.insert(0, _WS_RE.sub(" ", self.company.casefold()).strip())
-        return hashlib.sha256("|".join(parts).encode()).hexdigest()[:16]
+        return job_fingerprint(self.company, self.title)
 
     @property
     def haystack(self) -> str:
