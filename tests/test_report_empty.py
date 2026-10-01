@@ -33,3 +33,21 @@ def test_sem_coleta_alerta_fonte_em_vez_de_falta_de_vaga():
 def test_tudo_repetido_nao_e_alarme():
     e = build_empty_embed({"coletadas": 526, "avaliadas": 0, "aprovadas": 0, "ja_enviadas": 526})
     assert "já enviad" in e.get("description", "").lower()
+
+
+def test_lista_fontes_doentes_no_aviso():
+    e = build_empty_embed({
+        "coletadas": 0,
+        "fontes": {
+            "gupy": {"status": "sem_resposta", "requests": 12, "ok": 0, "jobs": 0, "degraded": 0, "errors": []},
+            "github": {"status": "ok", "requests": 8, "ok": 8, "jobs": 3, "degraded": 0, "errors": []},
+            "solides": {"status": "vazia", "requests": 2, "ok": 2, "jobs": 0, "degraded": 0, "errors": []},
+        },
+        "streaks": {"gupy": 3},
+    })
+    texto = e["description"]
+    assert "gupy" in texto and "sem resposta" in texto
+    assert "0/12" in texto
+    assert "3 falhas seguidas" in texto
+    assert "github:" not in texto
+    assert "solides:" not in texto

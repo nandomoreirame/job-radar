@@ -108,3 +108,26 @@ def test_sem_data_a_vaga_e_mantida():
     sem_data = parse_listing({k: v for k, v in PRIMEIRA.items() if k != "createdAt"})
     assert sem_data.published_at is None
     assert is_fresh(sem_data, hoje=date(2026, 9, 23))
+
+
+def test_health_conta_listagem_antes_do_keep(monkeypatch):
+    """Listing saudável com tudo filtrado por keep continua 'ok', não 'vazia'."""
+    from job_radar.health import SourceHealth
+    from job_radar.sources.solides import fetch_solides
+
+    listing_html = (
+        'self.__next_f.push([1,'
+        + json.dumps(json.dumps({"initialData": PAGINA}))
+        + '])'
+    )
+
+    def fake_get(url, **kwargs):
+        return listing_html.encode("utf-8")
+
+    monkeypatch.setattr("job_radar.sources.solides.get", fake_get)
+    monkeypatch.setattr("job_radar.sources.solides.time.sleep", lambda _: None)
+    health = SourceHealth(name="solides")
+    jobs = fetch_solides(max_pages=1, keep=lambda _j: False, health=health)
+    assert jobs == []
+    assert health.jobs >= 1  # listagem registrada antes do keep
+    assert health.status == "ok"
