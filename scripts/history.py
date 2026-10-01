@@ -10,10 +10,15 @@ from __future__ import annotations
 
 import argparse
 import sqlite3
-from collections import Counter
+import sys
+from collections import Counter, defaultdict
 from contextlib import closing
 from datetime import datetime
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
+
+from job_radar.models import Job  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -33,12 +38,64 @@ def rows(db: Path, days: int | None = None) -> list[tuple]:
         return conn.execute(query, params).fetchall()
 
 
+def audit(db: Path) -> dict:
+    """Relatório somente-leitura da saúde do histórico.
+
+    Detecta (a) url_keys enviadas sob mais de um fingerprint, (b) fingerprints
+    que não batem com a regra atual (migração pendente) e (c) totais.
+    """
+    with closing(sqlite3.connect(db)) as conn:
+        cols = {r[1] for r in conn.execute("PRAGMA table_info(seen)")}
+        has_url_key = "url_key" in cols
+        select = "fingerprint, title, company, url"
+        if has_url_key:
+            select += ", url_key"
+        linhas = conn.execute(f"SELECT {select} FROM seen").fetchall()
+
+    by_url: dict[str, set[str]] = defaultdict(set)
+    desatualizados = 0
+    for row in linhas:
+        if has_url_key:
+            fp, title, company, url, ukey = row
+        else:
+            fp, title, company, url = row
+            ukey = ""
+        atual = Job(
+            source="audit", external_id="", title=title or "", company=company or "", url=url or ""
+        ).fingerprint
+        if atual != fp:
+            desatualizados += 1
+        if ukey:
+            by_url[ukey].add(fp)
+
+    colisoes = sum(1 for fps in by_url.values() if len(fps) > 1)
+    return {
+        "total": len(linhas),
+        "url_keys_colisao": colisoes,
+        "fingerprints_desatualizados": desatualizados,
+    }
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="Histórico de vagas enviadas")
     ap.add_argument("--db", default=str(ROOT / "data" / "seen.db"))
     ap.add_argument("--days", type=int, default=0, help="só os últimos N dias (0 = tudo)")
     ap.add_argument("--export", default="", help="escreve um markdown no caminho indicado")
+    ap.add_argument(
+        "--audit",
+        action="store_true",
+        help="relatório de colisões de url_key e fingerprints desatualizados (não altera nada)",
+    )
     args = ap.parse_args()
+
+    if args.audit:
+        report = audit(Path(args.db))
+        print(f"Total de registros:              {report['total']}")
+        print(f"url_keys com >1 fingerprint:     {report['url_keys_colisao']}")
+        print(f"fingerprints desatualizados:     {report['fingerprints_desatualizados']}")
+        if report["fingerprints_desatualizados"]:
+            print("  (rode scripts/migrate_fingerprints.py para recalcular)")
+        return 0
 
     data = rows(Path(args.db), args.days or None)
     if not data:
