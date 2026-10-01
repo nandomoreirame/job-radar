@@ -40,6 +40,7 @@ python3 scripts/notify.py --input data/to_send.json --notify-empty --dry-run   #
 
 # maintenance
 python3 scripts/history.py                 # read data/seen.db
+python3 scripts/history.py --audit         # url_key collisions + stale fingerprints
 python3 scripts/ingest.py < jobs.json      # inject externally collected jobs (title, company, url, ...)
 python3 scripts/migrate_fingerprints.py --dry-run
 python3 scripts/delete_messages.py         # delete messages this webhook posted, by recorded ID
@@ -63,9 +64,16 @@ collect.py ──candidates.json──▶ triage.py ──to_send.json / apply_{
 Scripts are thin CLIs: each prepends `src/` to `sys.path` and imports from `job_radar`. All logic
 lives in `src/job_radar/`:
 
-- `models.Job`: canonical job across sources. `fingerprint` (sha256 of company + normalized title,
-  title-only when company is empty) is the dedup identity. **Changing the fingerprint rule requires
-  running `scripts/migrate_fingerprints.py`**, or already-sent jobs come back as new.
+- `models.Job`: canonical job across sources. `fingerprint` comes from `identity.job_fingerprint`
+  (company_key + title_key; title-only when company is empty). Prefer under-merging to
+  over-merging. **Changing the fingerprint rule requires running
+  `scripts/migrate_fingerprints.py`** (also backfills `url_key`); check with
+  `scripts/history.py --audit`.
+- `identity.py`: `fold` / `title_key` / `company_key` / `url_key` / 64-bit `simhash` (port of
+  career-ops fingerprint-core.mjs, MIT). Near-dup = hamming ≤ 5 and different company_keys.
+- `dedup.py`: intra-run variant selection (first hard-filter pass) and near-dup drop.
+- `fsutil.atomic_write_text`: temp + fsync + replace for every JSON/TSV the pipeline writes.
+- `discards.py`: `data/discarded.tsv` for the current run (audit filter false positives).
 - `sources/`: one connector per source, each returning `list[Job]`. Network fetch and parsing are
   split (`parse_*` / `listing_from_page` are pure and tested against recorded fixtures; `fetch_*`
   does I/O). Solides is special: the listing has no description, so `collect.py` passes a `keep`
@@ -78,20 +86,21 @@ lives in `src/job_radar/`:
   writes `fontes` into `last_run.json` and a failure streak into `data/source_health.json`.
 - `boards.py`: default ATS slugs + `ATS_BOARDS` env override (replaces defaults when set).
 - `geo.py`: Brazil country gate + `Cidade, UF` location normalization for international boards.
-- `filters.py`: binary hard cuts in `passes_hard_filters`, cheap first, skill matching last. Returns
-  `(passed, reason)`; the reason prefix (before `(`) is aggregated as funnel stats.
-- `scoring.py`: deterministic 0-100 score used only for ordering (skills up to 45, title family,
-  seniority, remote/hybrid, foreign-stack penalty). Filters decide eligibility; score never does.
+- `filters.py`: binary hard cuts in `passes_hard_filters`, cheap first (`MAX_JOB_AGE_DAYS`,
+  `BLOCKED_COMPANIES`), skill matching last. Returns `(passed, reason)`.
+- `scoring.py`: deterministic 0-100 score for ordering (skills, title family, seniority,
+  remote/hybrid, foreign-stack penalty, age −5/>21d −10/>35d). Filters decide eligibility.
 - `profile.py`: skills come from the owner's CV markdown, from the `## Stack técnica` table, plus
   synonym expansion. There is no separate skills list by design.
-- `settings.py`: per-owner config read from env on every call (`MIN_SALARY_PJ/CLT`,
-  `COMMUTE_CITIES`). Defaults are deliberately neutral: unset means "do not filter".
+- `settings.py`: per-owner config from env (`MIN_SALARY_PJ/CLT`, `COMMUTE_CITIES`,
+  `MAX_JOB_AGE_DAYS`, `BLOCKED_COMPANIES`). Defaults are neutral: unset means "do not filter".
 - `targets.py`: search terms per role target (`ai`, `fullstack`, `techlead`, `dados`) for sources
   with term search (Gupy).
-- `store.py`: SQLite `seen` table; `is_new` uses a 45-day resend window.
-- `report.py` / `runstats.py`: Discord embeds (chunked to Discord limits) and the funnel stats.
-  `--notify-empty` posts the funnel when nothing passed, so silence means "did not run". Empty-run
-  embeds also list unhealthy sources from `fontes`.
+- `store.py`: SQLite `seen` with `url_key` + `simhash` columns; `is_new` matches fingerprint OR
+  url_key inside the 45-day window; `recent_simhashes` loads the 90-day near-dup set once per run.
+- `report.py` / `runstats.py`: Discord embeds (chunked to Discord limits; `+N cidades` when
+  `other_locations` is set) and the funnel stats. `--notify-empty` posts the funnel when nothing
+  passed, so silence means "did not run".
 
 ## Conventions that bite
 

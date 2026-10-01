@@ -46,6 +46,10 @@ esconde vaga por um valor que você nunca escolheu.
   porta está aberta.
 - **Modalidade**: remoto sempre passa; presencial nunca; híbrido só nas cidades
   que você listar em `COMMUTE_CITIES`.
+- **Idade** (`MAX_JOB_AGE_DAYS`): descarta quando `published_at` é conhecida e
+  passa do limite. Sem data, a vaga passa.
+- **Empresa bloqueada** (`BLOCKED_COMPANIES`): compara pelo nome normalizado
+  (sufixo jurídico some), então `Acme` bloqueia `ACME Ltda`.
 - **Salário**, quando a vaga declara, contra um piso por tipo de contrato.
 - **Qualificações**: quantos termos do seu currículo aparecem no anúncio.
 - **Vagas afirmativas**, para não ocupar o lugar de quem a vaga busca. Exige a
@@ -57,9 +61,24 @@ esconde vaga por um valor que você nunca escolheu.
 
 ### Deduplicação
 
-Cada vaga tem uma impressão digital derivada de empresa e título. O que já foi
-publicado não volta ao canal, mesmo que a vaga seja reanunciada ou apareça em
-duas fontes ao mesmo tempo.
+Três chaves, nesta ordem de barateza:
+
+1. **Fingerprint** de empresa+título normalizados (acentos, sufixo jurídico,
+   ordem das palavras, tags de cidade/modalidade no título). Sem empresa,
+   só o título.
+2. **URL canônica** (https, sem `www.`, sem tracking): a mesma vaga com
+   `?utm_source=` não volta.
+3. **SimHash** da descrição (quase-duplicata entre empresas diferentes): pega
+   consultoria republicando a vaga do cliente. Hamming ≤ 5 bits, janela de 90
+   dias no histórico; na rodada, fica a descrição mais longa.
+
+Variantes da mesma vaga na rodada (Gupy por cidade) colapsam num fingerprint:
+fica a primeira que passa nos filtros, com as outras cidades em
+`other_locations`. O log `data/discarded.tsv` lista cada descarte da rodada
+(título, empresa, URL, motivo) para auditar regex agressivo.
+
+Se a regra de fingerprint mudar, rode `scripts/migrate_fingerprints.py` e
+confira com `scripts/history.py --audit`.
 
 ### Quando não encontra nada
 
