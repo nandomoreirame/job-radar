@@ -20,6 +20,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
+from job_radar.health import format_health_warnings  # noqa: E402
 from job_radar.models import Job  # noqa: E402
 from job_radar.report import chunk_embeds, job_to_embed  # noqa: E402
 from job_radar.report import build_empty_embed  # noqa: E402
@@ -85,6 +86,26 @@ def should_notify_empty(items: list, notify_empty: bool) -> bool:
     return bool(notify_empty) and not items
 
 
+def append_health_warnings(payload: dict, stats: dict) -> dict:
+    """Anexa avisos de fonte doente ao `content` da mensagem.
+
+    O embed de rodada vazia já lista fontes doentes; quando HÁ vagas, o aviso
+    só existia no stderr do collect. Colar no content da última mensagem
+    deixa o canal ver a degradação sem embed extra por fonte.
+    """
+    warnings = format_health_warnings(
+        stats.get("fontes") or {},
+        stats.get("streaks") or {},
+    )
+    if not warnings:
+        return payload
+    out = dict(payload)
+    existing = (out.get("content") or "").rstrip()
+    block = "\n".join(warnings)
+    out["content"] = f"{existing}\n{block}".strip() if existing else block
+    return out
+
+
 def main() -> int:
     load_env(ROOT / ".env")
     ap = argparse.ArgumentParser(description="Envia vagas aprovadas ao Discord")
@@ -103,10 +124,11 @@ def main() -> int:
 
     webhook = args.webhook or os.getenv("DISCORD_WEBHOOK_URL", "")
     items = json.loads(Path(args.input).read_text(encoding="utf-8"))
+    stats = read_stats(Path(args.stats))
     if not items:
         print("Nada aprovado para enviar.")
         if should_notify_empty(items, args.notify_empty) and webhook and not args.dry_run:
-            post(webhook, {"embeds": [build_empty_embed(read_stats(Path(args.stats)))]})
+            post(webhook, {"embeds": [build_empty_embed(stats)]})
             print("Aviso de varredura vazia publicado no canal.")
         return 0
     if not webhook and not args.dry_run:
@@ -129,9 +151,13 @@ def main() -> int:
     prefix = "(dry-run) " if args.dry_run else ""
 
     if args.batch:
-        for i, chunk in enumerate(chunk_embeds([e for _, e in pairs])):
+        chunks = chunk_embeds([e for _, e in pairs])
+        for i, chunk in enumerate(chunks):
             header = f"**{len(pairs)} vaga(s) compatíveis** nesta varredura" if i == 0 else None
             payload = {"embeds": chunk} | ({"content": header} if header else {})
+            # avisos de saúde só na última mensagem do lote
+            if i == len(chunks) - 1:
+                payload = append_health_warnings(payload, stats)
             if args.dry_run:
                 print(json.dumps(payload, ensure_ascii=False, indent=2)[:1200])
             else:
@@ -140,14 +166,18 @@ def main() -> int:
         if not args.dry_run:
             for job, _ in pairs:
                 store.mark_sent(job)
-        print(f"{prefix}{len(pairs)} vaga(s) em {len(chunk_embeds([e for _, e in pairs]))} mensagem(ns).")
+        print(f"{prefix}{len(pairs)} vaga(s) em {len(chunks)} mensagem(ns).")
         return 0
 
     total = len(pairs)
     for index, (job, embed) in enumerate(pairs, start=1):
-        payload = {"embeds": [embed]}
+        payload: dict = {"embeds": [embed]}
+        if index == total:
+            payload = append_health_warnings(payload, stats)
         if args.dry_run:
             print(f"[{index}/{total}] {job.title[:60]} — {job.company[:30]}")
+            if payload.get("content"):
+                print(payload["content"])
         else:
             message_id = post(webhook, payload)
             record_message_id(ROOT / "data" / "sent_messages.json", message_id, job.title)

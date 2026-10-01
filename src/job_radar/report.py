@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from job_radar.filters import WorkMode, detect_contract, detect_work_mode, parse_salary, _mode_from_hint
+from job_radar.health import format_health_warnings
 from job_radar.models import Job
 
 MODE_LABEL = {
@@ -110,6 +111,14 @@ def build_empty_embed(stats: dict) -> dict:
                   f"a melhor ficou em {melhor} de {corte}.")
     else:
         motivo = "Nenhuma vaga nova compatível com o perfil nesta varredura."
+
+    # fontes doentes entram no corpo: sem isso "0 coletadas" não diz qual caiu
+    warnings = format_health_warnings(
+        stats.get("fontes") or {},
+        stats.get("streaks") or {},
+    )
+    if warnings:
+        motivo = motivo + "\n" + "\n".join(warnings)
 
     fields = []
     for nome, valor in (("Coletadas", coletadas), ("Avaliadas", avaliadas), ("Aprovadas", aprovadas)):
