@@ -9,13 +9,12 @@ from __future__ import annotations
 
 import html as html_mod
 import re
-import urllib.error
-import urllib.request
 
+from job_radar.health import SourceHealth
+from job_radar.http import get
 from job_radar.models import Job
 
 BASE = "https://programathor.com.br"
-UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Safari/537.36"
 
 # Fatia por vaga: do link do card até o próximo link de card (ou o fim da página).
 # Delimitar por estrutura de <div> quebra quando o board muda o layout interno.
@@ -85,20 +84,27 @@ def parse_listing(page_html: str) -> list[Job]:
     return jobs
 
 
-def fetch_programathor(paths: list[str] | None = None) -> list[Job]:
+def fetch_programathor(
+    paths: list[str] | None = None,
+    health: SourceHealth | None = None,
+) -> list[Job]:
     """Varre as listagens por área. Cada caminho é uma página do board."""
     paths = paths or ["/jobs", "/jobs-python", "/jobs-javascript", "/jobs-data-science", "/jobs-devops"]
     jobs: list[Job] = []
     seen: set[str] = set()
     for path in paths:
         try:
-            req = urllib.request.Request(f"{BASE}{path}", headers={"User-Agent": UA})
-            with urllib.request.urlopen(req, timeout=25) as resp:  # noqa: S310
-                page = resp.read().decode("utf-8", errors="ignore")
-        except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError):
+            page = get(f"{BASE}{path}").decode("utf-8", errors="ignore")
+            if health:
+                health.record_ok()
+        except Exception as exc:
+            if health:
+                health.record_error(f"{path}: {type(exc).__name__}")
             continue
         for job in parse_listing(page):
             if job.url not in seen:
                 seen.add(job.url)
                 jobs.append(job)
+                if health:
+                    health.record_job(job)
     return jobs

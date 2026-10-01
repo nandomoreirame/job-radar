@@ -8,14 +8,13 @@ direto. A API é pública e o formato do título é convencionado:
 
 from __future__ import annotations
 
-import json
 import os
 import re
-import urllib.error
-import urllib.request
 from datetime import datetime, timedelta, timezone
 
 from job_radar.contact import extract_email, extract_phone
+from job_radar.health import SourceHealth
+from job_radar.http import get_json
 from job_radar.models import Job
 
 REPOS = [
@@ -128,21 +127,33 @@ def is_fresh(job: Job, max_age_days: int) -> bool:
     return age <= timedelta(days=max_age_days)
 
 
-def fetch_github_repos(repos: list[str] | None = None, max_age_days: int = DEFAULT_MAX_AGE_DAYS) -> list[Job]:
+def fetch_github_repos(
+    repos: list[str] | None = None,
+    max_age_days: int = DEFAULT_MAX_AGE_DAYS,
+    health: SourceHealth | None = None,
+) -> list[Job]:
     """Varre os repositórios de vagas. Um token no ambiente eleva o limite de
     60 para 5000 requisições por hora, mas não é obrigatório."""
-    headers = {"User-Agent": "job-radar/0.1", "Accept": "application/vnd.github+json"}
+    headers = {"Accept": "application/vnd.github+json"}
     if token := os.getenv("GITHUB_TOKEN"):
         headers["Authorization"] = f"Bearer {token}"
 
     jobs: list[Job] = []
     for repo in repos or REPOS:
         try:
-            req = urllib.request.Request(API.format(repo=repo), headers=headers)
-            with urllib.request.urlopen(req, timeout=25) as resp:  # noqa: S310
-                issues = json.loads(resp.read().decode("utf-8"))
-        except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError):
-            continue  # repo removido ou rede instável não derruba a varredura
+            issues = get_json(API.format(repo=repo), headers=headers)
+            if health:
+                health.record_ok()
+        except Exception as exc:  # repo removido ou rede instável não derruba a varredura
+            if health:
+                health.record_error(f"{repo}: {type(exc).__name__}")
+            continue
+        if not isinstance(issues, list):
+            continue
         parsed = (parse_issue(i, repo) for i in issues if "pull_request" not in i)
-        jobs.extend(job for job in parsed if is_fresh(job, max_age_days))
+        fresh = [job for job in parsed if is_fresh(job, max_age_days)]
+        if health:
+            for job in fresh:
+                health.record_job(job)
+        jobs.extend(fresh)
     return jobs

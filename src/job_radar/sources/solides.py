@@ -15,17 +15,16 @@ from __future__ import annotations
 import json
 import re
 import time
-import urllib.error
 import urllib.parse
-import urllib.request
 from collections.abc import Callable
 from datetime import date, datetime
 
 from job_radar.filters import AFFIRMATIVE_TAG
+from job_radar.health import SourceHealth
+from job_radar.http import get
 from job_radar.models import Job, clean_html
 
 BASE = "https://vagas.solides.com.br"
-UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Safari/537.36"
 PAGE_SIZE = 14  # fixo pelo portal
 DELAY_BETWEEN_PAGES = 1.2
 DELAY_BETWEEN_DETAILS = 0.8
@@ -41,21 +40,28 @@ _PUSH = 'self.__next_f.push([1,'
 _LD_RE = re.compile(r'<script[^>]*application/ld\+json[^>]*>(.*?)</script>', re.S)
 
 
-def _fetch(url: str, retries: int = 2) -> str:
-    """Baixa uma página, recuando quando o portal reclama de rajada."""
-    req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "text/html"})
-    for attempt in range(retries + 1):
-        try:
-            with urllib.request.urlopen(req, timeout=30) as resp:  # noqa: S310
-                return resp.read().decode("utf-8", "replace")
-        except urllib.error.HTTPError as exc:
-            if exc.code in (403, 429) and attempt < retries:
-                time.sleep(5 * (attempt + 1))
-                continue
-            return ""
-        except (urllib.error.URLError, TimeoutError):
-            return ""
-    return ""
+def _fetch(url: str, health: SourceHealth | None = None) -> str:
+    """Baixa uma página via o helper HTTP compartilhado.
+
+    A Sólides responde rajada com 403; retenta 403/429 com o pacing antigo
+    (5s, 10s) para não marcar a fonte como morta num burst passageiro.
+    """
+    try:
+        body = get(
+            url,
+            timeout=30,
+            headers={"Accept": "text/html"},
+            retries=2,
+            retry_statuses={403, 429},
+            backoff=lambda attempt, _ra: 5.0 * (attempt + 1),
+        ).decode("utf-8", "replace")
+        if health:
+            health.record_ok()
+        return body
+    except Exception as exc:
+        if health:
+            health.record_error(f"{type(exc).__name__}: {exc}")
+        return ""
 
 
 def rsc_blob(html: str) -> str:
@@ -146,7 +152,7 @@ def is_fresh(job: Job, max_age_days: int = DEFAULT_MAX_AGE_DAYS, hoje: date | No
     """
     if job.published_at is None:
         return True
-    return (hoje or date.today()) .toordinal() - job.published_at.date().toordinal() <= max_age_days
+    return (hoje or date.today()).toordinal() - job.published_at.date().toordinal() <= max_age_days
 
 
 def listing_from_page(blob: str) -> tuple[dict, list[Job]]:
@@ -176,13 +182,13 @@ def parse_jobposting(html: str) -> str:
     return data.get("description", "") or ""
 
 
-def fetch_detail(job: Job) -> Job:
+def fetch_detail(job: Job, health: SourceHealth | None = None) -> Job:
     """Preenche a descrição a partir da página do anúncio.
 
     Atribuir depois da construção não passa pelo `__post_init__`, então a
     limpeza de HTML é explícita aqui: o JSON-LD devolve a descrição marcada.
     """
-    job.description = clean_html(parse_jobposting(_fetch(job.url)))
+    job.description = clean_html(parse_jobposting(_fetch(job.url, health=health)))
     return job
 
 
@@ -192,22 +198,30 @@ def fetch_solides(
     seniority: str = "senior",
     keep: Callable[[Job], bool] | None = None,
     max_age_days: int = DEFAULT_MAX_AGE_DAYS,
+    health: SourceHealth | None = None,
 ) -> list[Job]:
     """Varre a listagem e detalha apenas as vagas que `keep` aprovar.
 
     `keep` existe para o custo não explodir: são ~700 anúncios sênior em
     tecnologia, e buscar a descrição de todos seria uma requisição por anúncio.
     Quem decide o que merece detalhe é o chamador, não este módulo.
+
+    Health.jobs conta a listagem fresca ANTES do keep: listagem saudável com
+    tudo filtrado continua "ok", não "vazia".
     """
     query = urllib.parse.urlencode({"seniorities": seniority})
     found: list[Job] = []
 
     for page in range(1, max_pages + 1):
         url = f"{BASE}/vagas/area/{area}/todas?{query}&page={page}"
-        meta, jobs = listing_from_page(rsc_blob(_fetch(url)))
+        meta, jobs = listing_from_page(rsc_blob(_fetch(url, health=health)))
         if not jobs:
             break
-        found.extend(j for j in jobs if is_fresh(j, max_age_days))
+        fresh = [j for j in jobs if is_fresh(j, max_age_days)]
+        found.extend(fresh)
+        if health:
+            for job in fresh:
+                health.record_job(job)
         # a listagem vem da mais nova para a mais velha: quando a página inteira
         # já está fora da janela, as seguintes também estão.
         if not any(is_fresh(j, max_age_days) for j in jobs):
@@ -220,6 +234,6 @@ def fetch_solides(
     for job in found:
         if keep is not None and not keep(job):
             continue
-        detailed.append(fetch_detail(job))
+        detailed.append(fetch_detail(job, health=health))
         time.sleep(DELAY_BETWEEN_DETAILS)
     return detailed

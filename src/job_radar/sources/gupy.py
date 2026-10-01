@@ -1,27 +1,49 @@
-"""Gupy: maior ATS do Brasil, com API pública de busca.
+"""Gupy: maior ATS do Brasil, via página de busca do portal.
 
-Não exige credencial e devolve descrição completa, modalidade e link de
-candidatura, o que a torna a fonte mais barata e mais confiável do conjunto.
+A API antiga (`employability-portal.gupy.io/api/v1/jobs`) morreu (404). A busca
+agora é server-rendered em `portal.gupy.io/job-search`; o HTML embute
+`<script id="__NEXT_DATA__">` com `props.pageProps.initialJobList.data`.
+O shape de cada item é o mesmo que `parse_job` já lia.
 """
 
 from __future__ import annotations
 
 import json
+import re
 import urllib.parse
-import urllib.request
 from datetime import datetime
 
+from job_radar.health import SourceHealth
+from job_radar.http import get
 from job_radar.models import Job
 
-API = "https://employability-portal.gupy.io/api/v1/jobs"
-UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Safari/537.36"
-PAGE_SIZE = 100
+SEARCH = "https://portal.gupy.io/job-search"
+_NEXT_DATA = re.compile(
+    r'<script[^>]*id=["\']__NEXT_DATA__["\'][^>]*>(.*?)</script>',
+    re.I | re.S,
+)
 
 
-def _get(url: str, timeout: int = 25) -> dict:
-    req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "application/json"})
-    with urllib.request.urlopen(req, timeout=timeout) as resp:  # noqa: S310 (URL fixa, http s)
-        return json.loads(resp.read().decode("utf-8"))
+def listing_from_page(html: str) -> list[dict]:
+    """Extrai a lista de vagas do `__NEXT_DATA__`. Ausente/quebrado → []."""
+    match = _NEXT_DATA.search(html or "")
+    if not match:
+        return []
+    try:
+        data = json.loads(match.group(1))
+    except (ValueError, TypeError):
+        return []
+    try:
+        listing = data["props"]["pageProps"]["initialJobList"]
+    except (KeyError, TypeError):
+        return []
+    if isinstance(listing, dict):
+        items = listing.get("data") or []
+    elif isinstance(listing, list):
+        items = listing
+    else:
+        return []
+    return [item for item in items if isinstance(item, dict)]
 
 
 def parse_job(raw: dict) -> Job:
@@ -48,12 +70,33 @@ def parse_job(raw: dict) -> Job:
     )
 
 
-def fetch_gupy(term: str, limit: int = PAGE_SIZE) -> list[Job]:
-    """Busca vagas por termo. Uma chamada por termo, sem paginação profunda:
-    o radar roda várias vezes ao dia, então a primeira página já traz o que é novo."""
-    query = urllib.parse.urlencode({"jobName": term, "limit": limit, "offset": 0})
+def fetch_gupy(
+    term: str,
+    limit: int = 12,
+    health: SourceHealth | None = None,
+) -> list[Job]:
+    """Busca vagas por termo na página do portal (uma página = até 12 itens)."""
+    # o termo vai no PATH: com "?term=" o portal responde 200 com a busca vazia
+    url = f"{SEARCH}/term={urllib.parse.quote(term, safe='')}"
     try:
-        payload = _get(f"{API}?{query}")
-    except Exception:  # rede instável não pode derrubar a varredura inteira
+        html = get(url, headers={"Accept": "text/html"}).decode("utf-8", "replace")
+        if health:
+            health.record_ok()
+    except Exception as exc:  # rede instável não pode derrubar a varredura inteira
+        if health:
+            health.record_error(f"{type(exc).__name__}: {exc}")
         return []
-    return [parse_job(item) for item in payload.get("data", [])]
+
+    items = listing_from_page(html)
+    if not items:
+        # HTTP ok, mas o payload Next sumiu ou mudou de shape
+        if health:
+            health.record_parse_error("payload ausente")
+        return []
+
+    # o portal pagina de 12 em 12; uma página por termo basta para o radar diário
+    jobs = [parse_job(item) for item in items[:limit]]
+    if health:
+        for job in jobs:
+            health.record_job(job)
+    return jobs
