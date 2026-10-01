@@ -1,6 +1,6 @@
 """Configuração vem do ambiente: o repositório não carrega dados de ninguém."""
 
-from job_radar.settings import commute_cities, min_salary
+from job_radar.settings import blocked_companies, commute_cities, max_job_age_days, min_salary
 
 
 def test_sem_configuracao_nao_ha_piso_salarial(monkeypatch):
@@ -38,3 +38,18 @@ def test_cidades_sao_normalizadas(monkeypatch):
 def test_entradas_vazias_sao_descartadas(monkeypatch):
     monkeypatch.setenv("COMMUTE_CITIES", "Cotia,,  ,Jandira")
     assert commute_cities() == frozenset({"cotia", "jandira"})
+
+
+def test_max_job_age_default_desliga_o_filtro(monkeypatch):
+    monkeypatch.delenv("MAX_JOB_AGE_DAYS", raising=False)
+    assert max_job_age_days() == 0
+
+
+def test_max_job_age_le_inteiro(monkeypatch):
+    monkeypatch.setenv("MAX_JOB_AGE_DAYS", "45")
+    assert max_job_age_days() == 45
+
+
+def test_blocked_companies_usa_company_key(monkeypatch):
+    monkeypatch.setenv("BLOCKED_COMPANIES", "Acme Ltda, Outra S.A.")
+    assert blocked_companies() == frozenset({"acme", "outra"})

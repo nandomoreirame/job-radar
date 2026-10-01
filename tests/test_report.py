@@ -1,4 +1,5 @@
-from job_radar.report import MAX_CHARS_PER_MESSAGE, chunk_embeds, embed_size
+from job_radar.models import Job
+from job_radar.report import MAX_CHARS_PER_MESSAGE, chunk_embeds, embed_size, job_to_embed
 
 
 def embed(chars: int) -> dict:
@@ -22,3 +23,20 @@ def test_quebra_antes_de_estourar_o_orcamento_de_caracteres():
 def test_embed_unico_gigante_nao_trava_o_agrupamento():
     chunks = chunk_embeds([embed(6000)])
     assert len(chunks) == 1
+
+
+def test_embed_mostra_outras_cidades():
+    job = Job(
+        source="gupy",
+        external_id="1",
+        title="Dev Sênior",
+        company="Acme",
+        url="https://x",
+        location="São Paulo, SP",
+        description="Python remoto",
+        work_mode_hint="remote",
+        other_locations=["Campinas, SP", "Curitiba, PR"],
+    )
+    emb = job_to_embed(job, 80, "casa bem")
+    local = next(f["value"] for f in emb["fields"] if f["name"] == "Local")
+    assert "+2 cidades" in local

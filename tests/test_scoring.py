@@ -36,3 +36,27 @@ def test_nota_fica_no_intervalo():
     job = make("Staff AI Engineer", "Python AWS")
     hits = {f"skill{i}" for i in range(20)}
     assert 0 <= score_job(job, hits, hits) <= 100
+
+
+def test_penalidade_por_idade_da_vaga():
+    from datetime import datetime, timedelta
+
+    hits = {"python", "aws", "docker", "typescript"}
+    base = make("Engenheiro de Dados Sênior", "Python, AWS, Docker, TypeScript")
+    fresca = score_job(base, hits, hits)
+
+    velha = make("Engenheiro de Dados Sênior", "Python, AWS, Docker, TypeScript")
+    velha.published_at = datetime.now() - timedelta(days=25)
+    assert score_job(velha, hits, hits) == fresca - 5
+
+    antiga = make("Engenheiro de Dados Sênior", "Python, AWS, Docker, TypeScript")
+    antiga.published_at = datetime.now() - timedelta(days=40)
+    assert score_job(antiga, hits, hits) == fresca - 10
+
+
+def test_sem_published_at_nao_penaliza_idade():
+    hits = {"python", "aws"}
+    job = make("Engenheiro de Dados Sênior", "Python AWS")
+    assert job.published_at is None
+    # só garante que não explode; a nota base já é coberta nos outros testes
+    assert score_job(job, hits, hits) >= 0

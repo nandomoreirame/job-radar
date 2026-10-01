@@ -381,3 +381,59 @@ def test_sem_cidades_configuradas_hibrido_nao_e_barrado(monkeypatch):
               location="Florianópolis, SC", work_mode_hint="hybrid")
     ok, motivo = passes_hard_filters(j, {"python", "react", "aws"})
     assert ok, motivo
+
+
+def test_vaga_antiga_reprova_quando_max_age_configurado(monkeypatch):
+    from datetime import datetime, timedelta
+
+    monkeypatch.setenv("MAX_JOB_AGE_DAYS", "45")
+    antiga = _vaga(
+        "Desenvolvedor Python Sênior",
+        "Vaga remota. Python, React, AWS.",
+        published_at=datetime.now() - timedelta(days=60),
+    )
+    ok, motivo = passes_hard_filters(antiga, {"python", "react", "aws"})
+    assert not ok
+    assert "vaga antiga" in motivo
+
+
+def test_sem_data_passa_mesmo_com_max_age(monkeypatch):
+    monkeypatch.setenv("MAX_JOB_AGE_DAYS", "45")
+    j = _vaga("Desenvolvedor Python Sênior", "Vaga remota. Python, React, AWS.")
+    ok, motivo = passes_hard_filters(j, {"python", "react", "aws"})
+    assert ok, motivo
+
+
+def test_published_at_iso_string_e_aceita(monkeypatch):
+    from datetime import datetime, timedelta
+
+    monkeypatch.setenv("MAX_JOB_AGE_DAYS", "30")
+    # triage/ingest constroem Job a partir de JSON; a data pode chegar como str
+    iso = (datetime.now() - timedelta(days=40)).isoformat()
+    j = _vaga("Desenvolvedor Python Sênior", "Vaga remota. Python, React, AWS.")
+    j.published_at = iso  # type: ignore[assignment]
+    ok, motivo = passes_hard_filters(j, {"python", "react", "aws"})
+    assert not ok
+    assert "vaga antiga" in motivo
+
+
+def test_empresa_bloqueada_reprova(monkeypatch):
+    monkeypatch.setenv("BLOCKED_COMPANIES", "Acme, Outra")
+    j = _vaga("Desenvolvedor Python Sênior", "Vaga remota. Python, React, AWS.",
+              company="ACME Ltda")
+    ok, motivo = passes_hard_filters(j, {"python", "react", "aws"})
+    assert not ok
+    assert motivo == "empresa bloqueada"
+
+
+def test_max_age_zero_nao_filtra(monkeypatch):
+    from datetime import datetime, timedelta
+
+    monkeypatch.setenv("MAX_JOB_AGE_DAYS", "0")
+    j = _vaga(
+        "Desenvolvedor Python Sênior",
+        "Vaga remota. Python, React, AWS.",
+        published_at=datetime.now() - timedelta(days=400),
+    )
+    ok, motivo = passes_hard_filters(j, {"python", "react", "aws"})
+    assert ok, motivo
