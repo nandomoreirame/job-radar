@@ -10,8 +10,11 @@ import re
 import unicodedata
 from enum import Enum
 
+from datetime import datetime
+
+from job_radar.identity import company_key
 from job_radar.models import Job
-from job_radar.settings import commute_cities, min_salary
+from job_radar.settings import blocked_companies, commute_cities, max_job_age_days, min_salary
 
 
 class Seniority(str, Enum):
@@ -242,8 +245,41 @@ def has_excluded_language(job: Job) -> bool:
     return len(alheias) > len(termos(_PROFILE_LANG_RE, texto))
 
 
+def _published_at(job: Job) -> datetime | None:
+    """Aceita datetime ou ISO string (JSON do triage/ingest)."""
+    value = job.published_at
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        return value
+    if isinstance(value, str):
+        try:
+            return datetime.fromisoformat(value.replace("Z", "+00:00"))
+        except ValueError:
+            return None
+    return None
+
+
+def _age_days(published: datetime) -> int:
+    now = datetime.now(published.tzinfo) if published.tzinfo else datetime.now()
+    return max(0, (now - published).days)
+
+
 def passes_hard_filters(job: Job, skills: set[str], min_skill_hits: int = 3) -> tuple[bool, str]:
     """Aplica os cortes inegociáveis. Devolve (passou, motivo da reprovação)."""
+    # baratos e configuráveis primeiro: idade e bloqueio de empresa
+    max_age = max_job_age_days()
+    if max_age > 0:
+        published = _published_at(job)
+        if published is not None:
+            age = _age_days(published)
+            if age > max_age:
+                return False, f"vaga antiga ({age} dias)"
+
+    blocked = blocked_companies()
+    if blocked and company_key(job.company) in blocked:
+        return False, "empresa bloqueada"
+
     if _NOT_A_JOB_RE.search(job.title):
         return False, "não é vaga (banco de talentos)"
 

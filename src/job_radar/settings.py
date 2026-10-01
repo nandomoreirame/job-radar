@@ -4,15 +4,17 @@ Piso salarial e região de deslocamento são dados de quem usa o radar, não do
 projeto. Ficam aqui, lidos do ambiente a cada chamada, para que um clone não
 herde a pretensão salarial nem o endereço de outra pessoa.
 
-Os defaults são NEUTROS de propósito: sem configuração, nenhum dos dois filtra
-nada. É melhor um radar que deixa passar do que um que descarta em silêncio por
-um valor que o dono nunca escolheu.
+Os defaults são NEUTROS de propósito: sem configuração, nenhum dos filtros
+descarta nada. É melhor um radar que deixa passar do que um que descarta em
+silêncio por um valor que o dono nunca escolheu.
 """
 
 from __future__ import annotations
 
 import os
 import unicodedata
+
+from job_radar.identity import company_key
 
 
 def _strip_accents(text: str) -> str:
@@ -43,3 +45,17 @@ def commute_cities() -> frozenset[str]:
     raw = os.getenv("COMMUTE_CITIES", "")
     cities = (_strip_accents(part).strip().casefold() for part in raw.split(","))
     return frozenset(c for c in cities if c)
+
+
+def max_job_age_days() -> int:
+    """Idade máxima em dias. Zero (default) desliga o filtro."""
+    try:
+        return max(0, int(os.getenv("MAX_JOB_AGE_DAYS", "0")))
+    except ValueError:
+        return 0
+
+
+def blocked_companies() -> frozenset[str]:
+    """Empresas bloqueadas, comparadas via company_key (sufixo jurídico some)."""
+    raw = os.getenv("BLOCKED_COMPANIES", "")
+    return frozenset(key for part in raw.split(",") if (key := company_key(part)))

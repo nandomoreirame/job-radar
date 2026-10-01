@@ -8,6 +8,7 @@ ao alvo, que é o que dá para medir sem interpretar texto.
 from __future__ import annotations
 
 import re
+from datetime import datetime
 
 from job_radar.filters import Seniority, WorkMode, detect_seniority, detect_work_mode, _mode_from_hint
 from job_radar.models import Job
@@ -49,5 +50,20 @@ def score_job(job: Job, skills: set[str], skill_hits: set[str]) -> int:
     # stack alheia dominando a descrição derruba a nota
     if len(FOREIGN_STACK_RE.findall(job.description)) >= 3:
         score -= 25
+
+    # vaga velha perde prioridade na ordenação (ainda passa o filtro duro)
+    published = job.published_at
+    if isinstance(published, str):
+        try:
+            published = datetime.fromisoformat(published.replace("Z", "+00:00"))
+        except ValueError:
+            published = None
+    if isinstance(published, datetime):
+        now = datetime.now(published.tzinfo) if published.tzinfo else datetime.now()
+        age = (now - published).days
+        if age > 35:
+            score -= 10
+        elif age > 21:
+            score -= 5
 
     return max(0, min(100, score))
