@@ -27,10 +27,13 @@ lista paralela. Lista paralela envelhece escondido; o currículo você mantém.
 
 | Fonte | Como |
 |---|---|
-| Gupy | API pública do portal de empregabilidade |
+| Gupy | página de busca do portal (payload Next.js) |
 | Repositórios de vagas no GitHub | API de issues (frontendbr/vagas, backend-br/vagas e afins) |
 | Programathor | Listagem pública |
 | Sólides Vagas | Payload do Next.js na listagem, descrição via JSON-LD da vaga |
+| Greenhouse | API pública do board (`boards-api.greenhouse.io`), um slug por empresa |
+| Lever | API pública de postings (`api.lever.co`), um slug por empresa |
+| Ashby | API pública do job board (`api.ashbyhq.com`), um slug por empresa |
 
 ### Filtros
 
@@ -86,10 +89,15 @@ O currículo precisa de uma seção assim, de onde saem as qualificações:
 ## Uso
 
 ```bash
-python3 scripts/collect.py --sources gupy,github,programathor,solides
+python3 scripts/collect.py --sources gupy,github,programathor,solides,ats
 python3 scripts/triage.py --min-score 70 --top 8 --out-all data/to_send.json
 python3 scripts/notify.py --input data/to_send.json --notify-empty
 ```
+
+`ats` no `--sources` é atalho para `greenhouse,lever,ashby`. Os boards
+padrão (QuintoAndar, Stone, Neon, Nubank, …) estão em código; para trocar,
+defina `ATS_BOARDS` no `.env` (formato `greenhouse:slug=Nome,lever:slug,…`).
+Quando setado, a lista substitui os defaults.
 
 Ou os três de uma vez com `./run.sh`.
 
