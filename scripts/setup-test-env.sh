@@ -38,4 +38,4 @@ echo "==> rodando a suíte"
 
 echo
 echo "Pronto. Para rodar a suíte de novo:"
-echo "  cd ~/job-radar && .venv/bin/python -m pytest tests/ -q"
+echo "  cd $(pwd) && .venv/bin/python -m pytest tests/ -q"

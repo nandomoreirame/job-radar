@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Varredura automática do radar de vagas.
+# O currículo vem de PROFILE_PATH ou do default dos scripts (profile/profile.md).
 # Sem "set -u": o snapshot de shell do ambiente referencia variáveis não definidas
 # e derrubaria o script antes de ele começar.
 set -eo pipefail
@@ -10,7 +11,6 @@ echo "=== $(date -Is) ==="
 # A Sólides para de paginar sozinha ao sair da janela de 45 dias, então o teto
 # de 50 páginas é só uma trava; na prática ela encerra por volta da 16a.
 python3 scripts/collect.py \
-  --profile profile/perfil.md \
   --sources gupy,github,programathor,solides,greenhouse,lever,ashby \
   --solides-pages 50 \
   --out data/candidates.json \
@@ -20,7 +20,6 @@ python3 scripts/collect.py \
 # preferível perder uma vaga mediana a encher o canal e o dono parar de ler.
 python3 scripts/triage.py \
   --input data/candidates.json \
-  --profile profile/perfil.md \
   --min-score 70 \
   --top 8 \
   --out-all data/to_send.json \
