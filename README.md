@@ -140,3 +140,8 @@ retorna produz suíte verde com produção quebrada.
 Cada fonte tem seus termos de uso. Os conectores respeitam `robots.txt`, se
 identificam por User-Agent e colocam pausa entre requisições. Mantenha assim se
 for adicionar fontes, e não use isto para candidatura automática em massa.
+
+## Licença
+
+[MIT](LICENSE). O SimHash em `src/job_radar/identity.py` é port do
+[career-ops](https://github.com/career-ops-hq/career-ops) (MIT), com o aviso original mantido no arquivo.
