@@ -12,6 +12,7 @@ from job_radar.sources.ashby import parse_job as parse_ashby
 from job_radar.sources.github_repos import parse_issue
 from job_radar.sources.greenhouse import parse_job as parse_greenhouse
 from job_radar.sources.gupy import listing_from_page, parse_job as parse_gupy
+from job_radar.sources.inhire import apply_detail, parse_listing as parse_inhire
 from job_radar.sources.lever import parse_job as parse_lever
 from job_radar.sources.programathor import parse_listing as parse_programathor
 from job_radar.sources.solides import parse_listing as parse_solides
@@ -78,6 +79,13 @@ def _jobs_ashby() -> list[Job]:
     return jobs
 
 
+def _jobs_inhire() -> list[Job]:
+    page = json.loads((FIX / "inhire_page.json").read_text(encoding="utf-8"))
+    detail = json.loads((FIX / "inhire_job.json").read_text(encoding="utf-8"))
+    jobs = [parse_inhire(raw, slug="olist", company="Olist") for raw in page["jobsPage"][:5]]
+    return [apply_detail(jobs[0], detail), *jobs[1:]]
+
+
 # (nome, jobs, empresa_obrigatoria)
 _CASES = [
     ("gupy", _jobs_gupy, True),
@@ -87,6 +95,7 @@ _CASES = [
     ("greenhouse", _jobs_greenhouse, True),
     ("lever", _jobs_lever, True),
     ("ashby", _jobs_ashby, True),
+    ("inhire", _jobs_inhire, True),
 ]
 
 

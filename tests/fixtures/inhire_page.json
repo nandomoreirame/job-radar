@@ -1,0 +1,215 @@
+{
+ "tenantName": "Olist",
+ "about": "<p><span style=\"color: rgba(0, 0, 0, 0.9);\">O ecossistema de vendas que transforma negócios de todos os tamanhos em gigantes do e-commerce.</span></p><p><span style=\"color: rgba(0, 0, 0, 0.9);\">Esta é a Olist.</span></p><p><span style=\"color: rgba(0, 0, 0, 0.9);\">Somos líder em soluções de e-commerce para varejistas e marcas digitais, com foco em vendas multicanal e omnichannel. Nossas ferramentas são pautadas em alta tecnologia e serviços de ponta, que integrados ajudam a digitalizar e crescer a operação de pequenos e médios comércios.</span></p><p><span style=\"color: rgba(0, 0, 0, 0.9);\">Somos uma empresa formada por gente de verdade, que valoriza a diversidade, fomenta a inclusão e faz acontecer respeitando as diferenças de cada pessoa.</span></p><p><span style=\"color: rgba(0, 0, 0, 0.9);\">Faça parte do ecossistema de vendas mais completo da internet. Veja as nossas oportunidades abertas e venha empoderar o comércio junto com a gente!</span></p>",
+ "background": [
+  "https://files.inhire.app/pages/career/banner_olist.png"
+ ],
+ "logo": "https://files.inhire.app/pages/career/logo_olist.png",
+ "openGraph": {
+  "title": "Olist",
+  "description": "Conheças nossas vagas",
+  "image": "https://files.inhire.app/og-images/olist.png"
+ },
+ "jobsPage": [
+  {
+   "careerPageId": "default",
+   "careerPageIds": [
+    "default"
+   ],
+   "displayName": "Analista de Dados e Negócios Sênior | Financial Services",
+   "jobId": "2e223f18-c074-4474-a73e-801e9c5f48df",
+   "status": "published",
+   "workplaceType": "Hybrid",
+   "location": "São Paulo, SP, BR"
+  },
+  {
+   "careerPageId": "default",
+   "careerPageIds": [
+    "default"
+   ],
+   "displayName": "Analista de Projetos Pleno | Ecommerce ",
+   "jobId": "b6b6b6d3-5464-4a13-947f-bf9a1969def9",
+   "status": "published",
+   "workplaceType": "Hybrid",
+   "location": "Osasco, SP, BR"
+  },
+  {
+   "careerPageId": "default",
+   "displayName": "Analista de Pré-Vendas | SDR - Exclusivo PCD",
+   "jobId": "8e1f57ed-df05-4bd6-909c-eb69ba5ae928",
+   "status": "published",
+   "workplaceType": "Hybrid",
+   "location": "Curitiba, PR, BR"
+  },
+  {
+   "careerPageId": "default",
+   "careerPageIds": [
+    "default"
+   ],
+   "displayName": "Analista de Pré-Vendas|SDR",
+   "jobId": "c733c367-cdf2-4e92-86ec-17a1a7bfcf2e",
+   "status": "published",
+   "workplaceType": "On-site",
+   "location": "Curitiba, PR, BR"
+  },
+  {
+   "careerPageIds": [
+    "default"
+   ],
+   "jobId": "a38e9c25-b777-4031-8ae2-19fff1de7e57",
+   "careerPageId": "default",
+   "displayName": "Analista de Sistemas Internos PL",
+   "status": "published",
+   "workplaceType": "Remote",
+   "location": "BR"
+  },
+  {
+   "careerPageId": "default",
+   "careerPageIds": [
+    "default"
+   ],
+   "displayName": "Assistente Operacional de Logística",
+   "jobId": "b99164b6-26cb-4c13-80f8-8ba3c78f109c",
+   "status": "published",
+   "workplaceType": "On-site",
+   "location": "Osasco, SP, BR"
+  },
+  {
+   "careerPageIds": [
+    "default"
+   ],
+   "careerPageId": "default",
+   "displayName": "Assistente de Cobrança",
+   "jobId": "be0d766f-0425-43cc-b526-7c096ec8bffc",
+   "status": "published",
+   "workplaceType": "On-site",
+   "location": "São Paulo, SP, BR"
+  },
+  {
+   "careerPageId": "default",
+   "displayName": "Atendimento Suporte Técnico (ERP) - Exclusivo PCD",
+   "jobId": "304ed75c-3b37-48c0-96b6-98afed09a3b4",
+   "status": "published",
+   "workplaceType": "Hybrid",
+   "location": "Bento Gonçalves, RS, BR"
+  },
+  {
+   "careerPageId": "default",
+   "displayName": "Banco de Talentos PcD",
+   "jobId": "6adf27dd-4ae3-481c-9af1-50edf5307d00",
+   "status": "published",
+   "workplaceType": "Remote",
+   "location": ""
+  },
+  {
+   "careerPageId": "default",
+   "careerPageIds": [
+    "default"
+   ],
+   "displayName": "Coordenador (a) Comercial ",
+   "jobId": "c62987f9-eb6e-4775-8003-f99d4a2b426c",
+   "status": "published",
+   "workplaceType": "Hybrid",
+   "location": "Curitiba, PR, BR"
+  },
+  {
+   "careerPageId": "default",
+   "careerPageIds": [
+    "default"
+   ],
+   "displayName": "Coordenação de Desenvolvimento de Software",
+   "jobId": "ac53f1f5-06f7-47b2-afd2-2f10c8406b02",
+   "status": "published",
+   "workplaceType": "Remote",
+   "location": "BR"
+  },
+  {
+   "careerPageId": "default",
+   "careerPageIds": [
+    "default"
+   ],
+   "displayName": "Desenvolvedor Full Stack (IA) - Pleno",
+   "jobId": "177b8bfe-170b-454d-aea4-8a93623900ec",
+   "status": "published",
+   "workplaceType": "Remote",
+   "location": "BR"
+  },
+  {
+   "careerPageId": "default",
+   "careerPageIds": [
+    "default"
+   ],
+   "displayName": "Desenvolvedor Full Stack - Pleno",
+   "jobId": "fcafc9ee-a2e0-48b6-832f-8a0fd90478db",
+   "status": "published",
+   "workplaceType": "Remote",
+   "location": "BR"
+  },
+  {
+   "careerPageId": "default",
+   "careerPageIds": [
+    "default"
+   ],
+   "displayName": "Especialista de Data Analytics |CX Ops",
+   "jobId": "939c01e8-67c2-4a4b-80a0-94a859a63f0b",
+   "status": "published",
+   "workplaceType": "Hybrid",
+   "location": "Curitiba, PR, BR"
+  },
+  {
+   "careerPageId": "default",
+   "careerPageIds": [
+    "default"
+   ],
+   "displayName": "Especialista de Performance",
+   "jobId": "1320c555-e835-4495-81c8-a82459dac562",
+   "status": "published",
+   "workplaceType": "Hybrid",
+   "location": "São Paulo, SP, BR"
+  },
+  {
+   "careerPageIds": [
+    "default"
+   ],
+   "careerPageId": "default",
+   "displayName": "Gerente Comercial | Crédito ",
+   "jobId": "a116bd54-93e0-426a-a8e8-18dbb46f0b2a",
+   "status": "published",
+   "workplaceType": "On-site",
+   "location": "São Paulo, SP, BR"
+  },
+  {
+   "jobId": "533e7d03-9e8d-443c-93ea-cbb9778392e4",
+   "careerPageIds": [
+    "default"
+   ],
+   "careerPageId": "default",
+   "displayName": "Gerente Sênior de Go-to-Market (GTM)",
+   "status": "published",
+   "workplaceType": "On-site",
+   "location": "São Paulo, SP, BR"
+  },
+  {
+   "careerPageIds": [
+    "default"
+   ],
+   "careerPageId": "default",
+   "displayName": "Growth Director",
+   "jobId": "a0edc73a-14f7-408a-ae96-b8432c6ba2fa",
+   "status": "published",
+   "workplaceType": "Remote",
+   "location": ""
+  },
+  {
+   "careerPageId": "default",
+   "careerPageIds": [
+    "default"
+   ],
+   "displayName": "Sales Representative | Closer",
+   "jobId": "e45f7908-5300-4b99-b385-58889d133c7b",
+   "status": "published",
+   "workplaceType": "Hybrid",
+   "location": "Curitiba, PR, BR"
+  }
+ ]
+}

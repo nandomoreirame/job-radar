@@ -1,6 +1,6 @@
 """Configuração de boards ATS (defaults + override por ATS_BOARDS)."""
 
-from job_radar.boards import DEFAULT_BOARDS, parse_ats_boards, resolve_boards
+from job_radar.boards import DEFAULT_BOARDS, KNOWN_ATS, parse_ats_boards, resolve_boards
 
 
 def test_defaults_tem_os_boards_verificados():
@@ -49,3 +49,17 @@ def test_resolve_boards_env_todo_invalido_cai_nos_defaults(capsys, monkeypatch):
     assert boards == DEFAULT_BOARDS
     err = capsys.readouterr().err
     assert "default" in err.lower() or "padrão" in err.lower() or "ignor" in err.lower()
+
+
+def test_inhire_e_um_ats_conhecido_com_defaults_verificados():
+    assert "inhire" in KNOWN_ATS
+    assert DEFAULT_BOARDS["inhire"] == {
+        "olist": "Olist",
+        "dock": "Dock",
+        "contaazul": "Conta Azul",
+        "cora": "Cora",
+    }
+
+
+def test_ats_boards_aceita_inhire():
+    assert parse_ats_boards("inhire:olist=Olist") == {"inhire": {"olist": "Olist"}}
