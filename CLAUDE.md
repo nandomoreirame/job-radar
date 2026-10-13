@@ -78,8 +78,10 @@ lives in `src/job_radar/`:
   split (`parse_*` / `listing_from_page` are pure and tested against recorded fixtures; `fetch_*`
   does I/O). Solides is special: the listing has no description, so `collect.py` passes a `keep`
   predicate (hard filters with `min_skill_hits=0`) and only fetches detail pages for survivors.
-  ATS connectors (`greenhouse`, `lever`, `ashby`) hit public JSON board APIs (one slug per company,
-  no term search); country gate keeps Brazil/LATAM-relevant jobs only.
+  ATS connectors (`greenhouse`, `lever`, `ashby`, `inhire`) hit public JSON board APIs (one slug per
+  company, no term search); country gate keeps Brazil/LATAM-relevant jobs only. InHire takes the
+  tenant in an `X-Tenant` header and its listing has no description, so it uses the same `keep`
+  predicate as Solides; country comes from the last `, BR` segment of `location`.
 - `http.py` / `robots.py`: shared GET with User-Agent, robots.txt gate (RFC 9309), retry on
   429/5xx/network, and per-host pacing (min 1s or Crawl-delay).
 - `health.py`: per-source `SourceHealth` (ok / vazia / sem_resposta / degradada). `collect.py`

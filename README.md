@@ -34,6 +34,7 @@ lista paralela. Lista paralela envelhece escondido; o currículo você mantém.
 | Greenhouse | API pública do board (`boards-api.greenhouse.io`), um slug por empresa |
 | Lever | API pública de postings (`api.lever.co`), um slug por empresa |
 | Ashby | API pública do job board (`api.ashbyhq.com`), um slug por empresa |
+| InHire | API pública de carreiras (`api.inhire.app`, tenant no header `X-Tenant`); descrição só das vagas que passam nos cortes baratos |
 
 ### Filtros
 
@@ -113,9 +114,9 @@ python3 scripts/triage.py --min-score 70 --top 8 --out-all data/to_send.json
 python3 scripts/notify.py --input data/to_send.json --notify-empty
 ```
 
-`ats` no `--sources` é atalho para `greenhouse,lever,ashby`. Os boards
-padrão (QuintoAndar, Stone, Neon, Nubank, …) estão em código; para trocar,
-defina `ATS_BOARDS` no `.env` (formato `greenhouse:slug=Nome,lever:slug,…`).
+`ats` no `--sources` é atalho para `greenhouse,lever,ashby,inhire`. Os boards
+padrão (QuintoAndar, Stone, Neon, Nubank, Olist, …) estão em código; para trocar,
+defina `ATS_BOARDS` no `.env` (formato `greenhouse:slug=Nome,inhire:tenant,…`).
 Quando setado, a lista substitui os defaults.
 
 Ou os três de uma vez com `./run.sh`.
