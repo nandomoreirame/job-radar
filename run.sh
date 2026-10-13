@@ -11,7 +11,7 @@ echo "=== $(date -Is) ==="
 # A Sólides para de paginar sozinha ao sair da janela de 45 dias, então o teto
 # de 50 páginas é só uma trava; na prática ela encerra por volta da 16a.
 python3 scripts/collect.py \
-  --sources gupy,github,programathor,solides,greenhouse,lever,ashby \
+  --sources gupy,github,programathor,solides,greenhouse,lever,ashby,inhire \
   --solides-pages 50 \
   --out data/candidates.json \
   --db data/seen.db

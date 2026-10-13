@@ -1,6 +1,6 @@
 """Boards ATS conhecidos e override por ATS_BOARDS.
 
-Formato do env: `greenhouse:slug=Nome,lever:slug=Nome,ashby:slug`
+Formato do env: `greenhouse:slug=Nome,lever:slug=Nome,ashby:slug,inhire:tenant=Nome`
 (nome opcional; sem nome usa o próprio slug). Quando setado, SUBSTITUI os
 defaults — não mescla — para o dono controlar exatamente quais boards rodar.
 """
@@ -11,7 +11,7 @@ import os
 import sys
 from typing import Mapping
 
-KNOWN_ATS = ("greenhouse", "lever", "ashby")
+KNOWN_ATS = ("greenhouse", "lever", "ashby", "inhire")
 
 # Boards verificados com vaga ao vivo na data da feature. Nome de exibição
 # entra no Job.company (Lever/Ashby não mandam o nome no payload).
@@ -32,6 +32,13 @@ DEFAULT_BOARDS: dict[str, dict[str, str]] = {
     },
     "ashby": {
         "nubank": "Nubank",
+    },
+    # slug = tenant da InHire (o subdomínio de <tenant>.inhire.app)
+    "inhire": {
+        "olist": "Olist",
+        "dock": "Dock",
+        "contaazul": "Conta Azul",
+        "cora": "Cora",
     },
 }
 

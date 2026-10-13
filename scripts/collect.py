@@ -18,7 +18,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from job_radar.boards import resolve_boards  # noqa: E402
+from job_radar.boards import KNOWN_ATS, resolve_boards  # noqa: E402
 from job_radar.dedup import (  # noqa: E402
     drop_near_duplicates,
     matches_history_simhash,
@@ -41,6 +41,7 @@ from job_radar.sources import (  # noqa: E402
     fetch_github_repos,
     fetch_greenhouse,
     fetch_gupy,
+    fetch_inhire,
     fetch_lever,
     fetch_programathor,
     fetch_solides,
@@ -53,7 +54,7 @@ HEALTH_PATH = ROOT / "data" / "source_health.json"
 
 _SOURCE_HELP = (
     "lista separada por vírgula: gupy, github, programathor, solides, "
-    "greenhouse, lever, ashby (ats = as três)"
+    "greenhouse, lever, ashby, inhire (ats = os quatro)"
 )
 
 
@@ -61,7 +62,7 @@ def _expand_sources(raw: str) -> set[str]:
     names = {s.strip().casefold() for s in raw.split(",") if s.strip()}
     if "ats" in names:
         names.discard("ats")
-        names.update({"greenhouse", "lever", "ashby"})
+        names.update(KNOWN_ATS)
     return names
 
 
@@ -143,13 +144,14 @@ def main() -> int:
         for job in fetch_programathor(health=h):
             _add(variants, job)
 
+    # Sólides e InHire listam sem descrição: só detalha o que passa nos cortes
+    # baratos (min_skill_hits=0, porque as qualificações estão na descrição)
+    def vale_detalhar(job: Job) -> bool:
+        aprovado, _ = passes_hard_filters(job, skills, min_skill_hits=0)
+        return aprovado
+
     if "solides" in sources:
         h = health_for("solides")
-
-        def vale_detalhar(job: Job) -> bool:
-            aprovado, _ = passes_hard_filters(job, skills, min_skill_hits=0)
-            return aprovado
-
         for job in fetch_solides(max_pages=args.solides_pages, keep=vale_detalhar, health=h):
             _add(variants, job)
 
@@ -166,6 +168,11 @@ def main() -> int:
     if "ashby" in sources:
         h = health_for("ashby")
         for job in fetch_ashby(boards.get("ashby"), health=h):
+            _add(variants, job)
+
+    if "inhire" in sources:
+        h = health_for("inhire")
+        for job in fetch_inhire(boards.get("inhire"), health=h, keep=vale_detalhar):
             _add(variants, job)
 
     # uma variante por fingerprint (a que passa no filtro, se houver);
